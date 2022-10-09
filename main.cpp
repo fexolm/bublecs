@@ -1,37 +1,49 @@
-#include <bublecs.h>
-
+#include "bublecs.h"
+#include "utils.hpp"
 #include <iostream>
+#include <exception>
+#include <vector>
 
 struct Position
 {
-	int x;
-	int y;
+    int x;
+    int y;
 };
 
 struct Value
 {
-	int value;
+    int value;
+};
+
+struct Unit
+{
+    std::string name;
 };
 
 int main()
 {
-    World world;
+    std::set_terminate(catcher);
+    ecs::World world;
 
-    Value val;
+    ecs::ECSId e = world.CreateEntity(Position{5, 2}, Value{123}, Unit{"a"});
 
-    int e = world.CreateEntity(Position{1, 3});
+    world.for_each<Position, Value, Unit>([](Position &p, Value &v, Unit &u)
+                             { std::cout << p.x << " " << p.y << " " << v.value << " " << u.name << std::endl; });
 
-    int e2 = world.CreateEntity(Position{5, 2}, Value{123});
+    world.RemoveComponents<Position>(e);
 
     world.for_each<Position>([](Position &p)
                              { std::cout << p.x << " " << p.y << std::endl; });
 
+    world.RemoveComponents<Value>(e);
+
     world.for_each<Value>([](Value &v)
                           { std::cout << v.value << std::endl; });
 
-    world.for_each<Position, Value>([](Position &p, Value &v)
-                                    { std::cout << p.x << " " << v.value << std::endl; });
+    world.RemoveComponents<Unit>(e);
 
-    world.for_each<Value, Position>([](Value &v, Position &p)
-                                    { std::cout << p.x << " " << v.value << std::endl; });
+    world.for_each<Unit>([](Unit &u)
+                          { std::cout << u.name << std::endl; });
+
+    return 0;
 }
