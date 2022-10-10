@@ -27,22 +27,22 @@ int main()
 
     ecs::ECSId e = world.CreateEntity(Position{5, 2}, Value{123}, Unit{"a"});
 
-    world.for_each<Position, Value, Unit>([](Position &p, Value &v, Unit &u)
+    world.ForEach<Position, Value, Unit>([](Position &p, Value &v, Unit &u)
                              { std::cout << p.x << " " << p.y << " " << v.value << " " << u.name << std::endl; });
 
     world.RemoveComponents<Position>(e);
 
-    world.for_each<Position>([](Position &p)
+    world.ForEach<Position>([](Position &p)
                              { std::cout << p.x << " " << p.y << std::endl; });
 
     world.RemoveComponents<Value>(e);
 
-    world.for_each<Value>([](Value &v)
+    world.ForEach<Value>([](Value &v)
                           { std::cout << v.value << std::endl; });
 
     world.RemoveComponents<Unit>(e);
 
-    world.for_each<Unit>([](Unit &u)
+    world.ForEach<Unit>([](Unit &u)
                           { std::cout << u.name << std::endl; });
 
     return 0;

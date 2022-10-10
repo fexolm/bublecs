@@ -37,7 +37,6 @@ struct ComponentType
     uint64_t size;
 };
 
-
 class CompositeType
 {
  private:
@@ -45,11 +44,7 @@ class CompositeType
     std::unordered_map<ECSId, ECSId> cols_to_types;
     std::unordered_map<ECSId, ECSId> types_to_cols;
 
-    void GenerateIdx() {
-
-    }
  public:
-
     CompositeType() = default;
     CompositeType(std::unordered_map<ECSId, ComponentType> types) : types(types) {
         ECSId column_id = 0;
@@ -284,7 +279,7 @@ struct World
     }
 
     template <typename Tuple, typename Func, size_t... I>
-    void for_each_impl(Func f, Tuple t, int rows_count, std::index_sequence<I...>)
+    void ForEachImpl(Func f, Tuple t, int rows_count, std::index_sequence<I...>)
     {
         for (int i = 0; i < rows_count; i++) {
             f(std::get<I>(t)[i]...);
@@ -292,7 +287,7 @@ struct World
     }
 
     template <typename... Components, typename Func>
-    void for_each(Func f)
+    void ForEach(Func f)
     {
         CompositeType type = GetCompositeType<Components...>();
 
@@ -303,7 +298,7 @@ struct World
 
                 static constexpr auto size = std::tuple_size<decltype(selectedColumns)>::value;
 
-                for_each_impl(f, selectedColumns, a.rowsCount, std::make_index_sequence<size>{});
+                ForEachImpl(f, selectedColumns, a.rowsCount, std::make_index_sequence<size>{});
             }
         }
     }
