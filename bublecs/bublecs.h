@@ -220,61 +220,58 @@ struct World
     template <typename... Components>
     void RemoveComponents(ECSId entity_id)
     {
-        CompositeType type = GetCompositeType<Components...>();
+        if (!entities.count(entity_id)) return;
 
-        // if entity found - do remove components
-        if (entities.count(entity_id)) {
-            Entity& entity = entities.at(entity_id);
-            //entities_to_delete.push_back(entity);
-            Archetype arch = archetypes[entity.archetype_id];
-            CompositeType new_cmp_type = arch.type;
+        Entity& entity = entities.at(entity_id);
+        //entities_to_delete.push_back(entity);
+        Archetype arch = archetypes[entity.archetype_id];
+        CompositeType new_cmp_type = arch.type;
 
-            // fill components ids to delete
-            std::unordered_map<ECSId, ComponentType> components_to_delete;
-            ([&] {
-                ECSId type_id = GetTypeId<Components>();
-                components_to_delete.emplace(type_id, arch.type.GetType(type_id));
-                new_cmp_type.RemoveComponent(type_id);
-            }(),
-            ...);
+        // fill components ids to delete
+        std::unordered_map<ECSId, ComponentType> components_to_delete;
+        ([&] {
+            ECSId type_id = GetTypeId<Components>();
+            components_to_delete.emplace(type_id, arch.type.GetType(type_id));
+            new_cmp_type.RemoveComponent(type_id);
+        }(),
+        ...);
 
-            // copy row from archtype to tmp var without components to delete
-            std::vector<Column> new_columns;
-            for (size_t i = 0; i < arch.columns.size(); ++i ) {
-                ECSId type_id = arch.type.GetTypeIdx(i);
-                auto start = arch.columns[i].begin() + entity.row;
-                auto cmp_size = arch.type.GetTypeSize(type_id);
+        // copy row from archtype to tmp var without components to delete
+        std::vector<Column> new_columns;
+        for (size_t i = 0; i < arch.columns.size(); ++i ) {
+            ECSId type_id = arch.type.GetTypeIdx(i);
+            auto start = arch.columns[i].begin() + entity.row;
+            auto cmp_size = arch.type.GetTypeSize(type_id);
 
-                bool leave = components_to_delete.count(type_id) == 0; // if not in components to delete
-                if (leave) {
-                    new_columns.push_back({start, start + cmp_size});
-                }
-
-                // move row to delete to the end
-                for (size_t j = 0; j < cmp_size; ++j) {
-                    std::swap(*(start + j), *(arch.columns[i].end() - cmp_size + j));
-                }
-
-                arch.columns[i].resize(arch.columns[i].size() - cmp_size);
-                // delete acrhetype if is empty
-                bool arch_is_empty = std::all_of(arch.columns.begin(), arch.columns.end(), [](const Column& c) {
-                    return c.empty();
-                });
-                if (arch_is_empty) {
-                    archetypes.erase(entity.archetype_id);
-                }
+            bool leave = components_to_delete.count(type_id) == 0; // if not in components to delete
+            if (leave) {
+                new_columns.push_back({start, start + cmp_size});
             }
 
-            // create of find archtype according with new composite type
-            if (!new_cmp_type.Empty()) {
-                auto [id, archetype] = FindOrCreateArchtype(new_cmp_type);
-                entity.type = new_cmp_type;
-                entity.archetype_id = id;
-                entity.row = archetype.rowsCount;
-                archetype.SetColumns(new_columns, entity.row);
-            } else {
-                entities.erase(entity_id);
+            // move row to delete to the end
+            for (size_t j = 0; j < cmp_size; ++j) {
+                std::swap(*(start + j), *(arch.columns[i].end() - cmp_size + j));
             }
+
+            arch.columns[i].resize(arch.columns[i].size() - cmp_size);
+            // delete acrhetype if is empty
+            bool arch_is_empty = std::all_of(arch.columns.begin(), arch.columns.end(), [](const Column& c) {
+                return c.empty();
+            });
+            if (arch_is_empty) {
+                archetypes.erase(entity.archetype_id);
+            }
+        }
+
+        // create of find archtype according with new composite type
+        if (!new_cmp_type.Empty()) {
+            auto [id, archetype] = FindOrCreateArchtype(new_cmp_type);
+            entity.type = new_cmp_type;
+            entity.archetype_id = id;
+            entity.row = archetype.rowsCount;
+            archetype.SetColumns(new_columns, entity.row);
+        } else {
+            entities.erase(entity_id);
         }
     }
 
